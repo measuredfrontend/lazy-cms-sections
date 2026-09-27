@@ -13,7 +13,11 @@ mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ONLY=a,b records just those clips.
+const ONLY = process.env.ONLY?.split(',');
+
 async function clip(name, fn, { delayLazy = 0 } = {}) {
+	if (ONLY && !ONLY.includes(name)) return;
 	const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir: OUT, size: { width: 1280, height: 720 } } });
 	const page = await ctx.newPage();
 	if (delayLazy) {
@@ -84,6 +88,29 @@ await clip('universal-source', async (p) => {
 	await sleep(800);
 	await find(p, 'data-section="Gallery"');
 	await sleep(4000);
+});
+
+// 6. bad CMS data without validation: the whole page is a 500
+await clip('unvalidated-500', async (p) => {
+	await p.goto(`${BASE}/unvalidated?page=broken`);
+	await zoom(p, 1.6);
+	await sleep(3500);
+});
+
+// 7. same data, validated in the server load: the bad section is dropped, the page renders
+await clip('validated-ok', async (p) => {
+	await p.goto(`${BASE}/universal?page=broken`);
+	await zoom(p, 1.5);
+	await sleep(2000);
+	await scroll(p, 400);
+	await sleep(1500);
+});
+
+// 8. components returned from +page.server.ts: not serializable, 500
+await clip('server-component-500', async (p) => {
+	await p.goto(`${BASE}/server-component`);
+	await zoom(p, 1.6);
+	await sleep(3500);
 });
 
 await browser.close();
