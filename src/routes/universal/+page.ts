@@ -1,12 +1,10 @@
-import { resolveSection } from '$lib/registry';
-import type { PageLoad } from './$types';
+import { loadSection } from '$lib/registry';
 
-// Universal load: runs on the server during SSR AND in the browser.
-// Components can't be serialized, so they must be resolved here, not in +page.server.ts.
-// Because this is awaited before render, every section is in the SSR HTML.
-export const load: PageLoad = async ({ data }) => {
-	const sections = await Promise.all(
-		data.sections.map(async (s) => ({ ...s, component: await resolveSection(s.type) }))
-	);
-	return { title: data.title, sections };
-};
+// Universal load: runs on the server during SSR AND again in the browser.
+// Components can't be serialized, so they are resolved here, not in +page.server.ts.
+// SSR awaits this before rendering, so every section ends up in the HTML.
+export async function load({ data }) {
+	const resolved = [];
+	for (const section of data.sections) resolved.push(loadSection(section.type).then((component) => ({ ...section, component })));
+	return { title: data.title, sections: await Promise.all(resolved) };
+}

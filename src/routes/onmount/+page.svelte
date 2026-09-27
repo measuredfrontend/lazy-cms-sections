@@ -1,17 +1,18 @@
 <script lang="ts">
-	// ANTI-PATTERN for content: onMount never runs on the server,
-	// so the SSR HTML has no sections at all. Fine only for client-only widgets.
+	// ANTI-PATTERN for content: core sections render on the server,
+	// but lazy ones are loaded in onMount, which never runs during SSR.
 	import { onMount } from 'svelte';
-	import { resolveSection } from '$lib/registry';
+	import { CORE, loadSection } from '$lib/registry';
 	import SectionList from '$lib/SectionList.svelte';
 
 	let { data } = $props();
-	let sections = $state<any[]>([]);
+	let lazy = $state<Record<string, any>>({});
+	const sections = $derived(data.sections.map((s) => ({ ...s, component: CORE[s.type] ?? lazy[s.id] ?? null })));
 
 	onMount(async () => {
-		sections = await Promise.all(
-			data.sections.map(async (s) => ({ ...s, component: await resolveSection(s.type) }))
-		);
+		for (const s of data.sections) {
+			if (!CORE[s.type]) loadSection(s.type).then((c) => (lazy[s.id] = c));
+		}
 	});
 </script>
 

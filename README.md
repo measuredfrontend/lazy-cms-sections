@@ -1,51 +1,57 @@
 # Lazy CMS sections with full SSR (SvelteKit)
 
-A CMS page is a list of typed sections. This demo resolves the **same six sections four different ways** and measures what each one does to your HTML, your bundle and your hydration.
+A CMS page is a list of typed sections. This demo resolves **the same sections five different ways** and measures what each one does to your HTML, your downloads and your hydration.
 
-The short version: **where the `import()` runs decides everything.**
+The short version: **where the component is resolved decides whether your section exists in the HTML.**
 
-| Route | Where sections are resolved | In SSR HTML? | Code-split? |
-| --- | --- | --- | --- |
-| `/universal` | `+page.ts` universal load (eager map + `import.meta.glob`) | Yes, all | Yes |
-| `/static` | Static imports in the page | Yes, all | No, whole catalogue shipped |
-| `/await-in-template` | `{#await}` in the template | **No** | Yes |
-| `/onmount` | `onMount` | **No** | Yes |
+| Route | Where lazy sections are resolved |
+| --- | --- |
+| `/universal` | `+page.ts` universal load (core map + `import.meta.glob`) |
+| `/static` | Static imports of every section in the page |
+| `/await-expression` | Svelte 5 async `await` inside a component (`experimental.async`) |
+| `/await-in-template` | `{#await loadSection()}` block in the template |
+| `/onmount` | `onMount` |
+
+Two pages per route: `?page=full` (default: 5 known section types + 1 deliberately **unknown** type, which must render nothing) and `?page=simple` (only the 2 core sections).
 
 ## Run it
 
 ```sh
 bun install
 bun run build
-bun run preview          # http://localhost:4173
+bun run preview                     # http://localhost:4173
 bunx playwright install chromium
-node scripts/measure.mjs # DELAY=1500 by default (slow lazy chunks)
+node scripts/measure.mjs            # DELAY=1500 to slow the lazy section chunks
 ```
 
-Open each route and press **Ctrl+U** (view source) to see which sections exist in the raw HTML.
+Open a route and press **Ctrl+U** (view source) to see which sections exist in the raw HTML.
 
-## Key files
+## Measured (local production build, 27 Sep 2026, Windows 11, i9-13900KF)
 
-- `src/lib/registry.ts`: eager map + lazy `import.meta.glob`, unknown types return `null`
-- `src/routes/universal/+page.ts`: resolves components in the universal load
-- `src/lib/SectionList.svelte`: renders sections, each inside `<svelte:boundary>`
-- `scripts/measure.mjs`: SSR HTML check + chunk and hydration timing with Playwright
-
-## Measured (local production build, 27 Sep 2026)
-
-| Route | Sections in SSR HTML | Hydrated at, no delay | Hydrated at, lazy chunks +1.5 s |
-| --- | --- | --- | --- |
-| `/universal` | 5 of 5 | 68 ms | 1,559 ms |
-| `/static` | 5 of 5 | 36 ms | (shares the delayed code) |
-| `/await-in-template` | 0 of 5 | 33 ms | 36 ms |
-| `/onmount` | 0 of 5 | 34 ms | 33 ms |
+| Route | Sections in SSR HTML | Interactive (full page) | Same, one lazy chunk +1.5 s | Simple page downloads unused section code? |
+| --- | --- | --- | --- | --- |
+| `/universal` | **5/5** | 42 ms | 1,545 ms | **No** |
+| `/static` | **5/5** | 37 ms | 1,527 ms | **Yes: Gallery, Accordion, Quote** |
+| `/await-expression` | **5/5** | 42 ms | 1,546 ms | No |
+| `/await-in-template` | 2/5 | 35 ms | 35 ms | No |
+| `/onmount` | 2/5 | 35 ms | 34 ms | No |
 
 Findings:
 
-1. The universal load gives complete HTML **and** split code.
-2. `{#await}` and `onMount` hydrate fast, but only because the content isn't there. The sections pop in later (SEO hole + layout shift).
-3. Catch: on a hard load, the browser re-runs the universal load and fetches lazy chunks **before** hydration. The **whole page** waits for the slowest lazy chunk, not just that section. It also adds one sequential round trip, since those chunks aren't preloaded. Fix: part 3 (modulepreload hints).
+1. `{#await}` in the template and `onMount` drop every lazy section from the server HTML. The docs confirm that during SSR only the pending branch of `{#await}` renders. Those sections pop in after hydration.
+2. Resolving components in the universal load, or with Svelte's experimental async `await`, gives complete HTML, and a page only downloads the section code it uses. Static imports also give complete HTML, but every page downloads every section's code. Here the sections are tiny, so the byte difference is small; with real sections (galleries, maps, editors) it grows with the catalogue.
+3. The broken versions *look* faster (35 ms) only because the content isn't there.
+4. Any strategy that renders a section on the server must download that section's code before the page becomes interactive, and the **whole page** waits for it, not just that section. With a lazy chunk slowed by 1.5 s (simulated in the measure script), every complete strategy waited about 1.5 s. The universal load adds one small extra round trip locally (42 vs 37 ms), because lazy chunks are discovered only when the load re-runs in the browser. Part 3 measures fixing that with modulepreload hints.
 
-Versions: SvelteKit 2, Svelte 5.57, Vite 8.3, adapter-node 5.5.
+Versions: SvelteKit 2.70, Svelte 5.57, Vite 8.3, adapter-node 5.5. Raw numbers: `results/`.
+
+## Key files
+
+- `src/lib/registry.ts`: core map + on-demand `import.meta.glob`; unknown types return `null`
+- `src/routes/universal/+page.ts`: resolves components in the universal load
+- `src/lib/AsyncSection.svelte`: the experimental async `await` variant
+- `src/lib/SectionList.svelte`: renders sections, each inside `<svelte:boundary>`
+- `scripts/measure.mjs`: SSR HTML check, chunk downloads and hydration timing with Playwright
 
 ## Licence
 

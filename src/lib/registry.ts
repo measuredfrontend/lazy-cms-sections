@@ -4,22 +4,24 @@ import TextBlock from './sections/TextBlock.svelte';
 
 type AnyComponent = Component<any>;
 
-// EAGER: on (almost) every page or LCP-critical. Bundled with the route, never fetched separately.
-export const EAGER: Record<string, AnyComponent> = { Hero, TextBlock };
+// CORE: sections most pages start with. They ship with the route and never wait for a fetch.
+export const CORE: Record<string, AnyComponent> = { Hero, TextBlock };
 
-// LAZY: a non-eager glob. Vite turns every matched file into its own chunk,
-// loaded only when a page actually uses that section type.
-// Unknown types are simply a missing key -> no failed network request.
-const LAZY = import.meta.glob<{ default: AnyComponent }>('./sections/*.svelte');
+// Everything else: a lazy glob. Vite emits one chunk per file,
+// and a page only downloads the chunks for the section types it actually uses.
+// An unknown type is just a missing key: no failed request.
+const ON_DEMAND = import.meta.glob<{ default: AnyComponent }>('./sections/*.svelte');
 
-export async function resolveSection(type: string): Promise<AnyComponent | null> {
-	if (EAGER[type]) return EAGER[type];
-	const load = LAZY[`./sections/${type}.svelte`];
-	if (!load) return null; // unknown type: render nothing, never crash the page
+export async function loadSection(type: string): Promise<AnyComponent | null> {
+	const core = CORE[type];
+	if (core) return core;
+	const importer = ON_DEMAND[`./sections/${type}.svelte`];
+	if (!importer) return null; // unknown type: render nothing, never crash the page
 	try {
-		return (await load()).default;
+		const mod = await importer();
+		return mod.default;
 	} catch (err) {
-		console.warn(`[sections] failed to load "${type}"`, err);
+		console.warn(`[sections] could not load "${type}"`, err);
 		return null;
 	}
 }

@@ -1,16 +1,22 @@
 <script lang="ts">
-	// ANTI-PATTERN: the promise is created during SSR, but SSR never waits for it.
-	// The server sends the pending branch; sections pop in after hydration (SEO hole + CLS).
-	import { resolveSection } from '$lib/registry';
+	// ANTI-PATTERN: core sections render normally, but lazy ones use {#await import} in the template.
+	// SSR renders only the pending branch, so lazy sections are missing from the HTML
+	// and pop in after hydration (layout shift).
+	import { CORE, loadSection } from '$lib/registry';
 	let { data } = $props();
 </script>
 
 {#each data.sections as s (s.id)}
-	{#await resolveSection(s.type)}
-		<div class="placeholder">Loading {s.type}...</div>
-	{:then Component}
-		{#if Component}<Component {...s.props} />{/if}
-	{/await}
+	{@const Core = CORE[s.type]}
+	{#if Core}
+		<Core {...s.props} />
+	{:else}
+		{#await loadSection(s.type)}
+			<div class="placeholder">Loading {s.type}...</div>
+		{:then Component}
+			{#if Component}<Component {...s.props} />{/if}
+		{/await}
+	{/if}
 {/each}
 
 <style>

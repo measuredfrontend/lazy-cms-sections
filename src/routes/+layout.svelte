@@ -14,8 +14,9 @@
 	<a href="/">Home</a> ·
 	<a href="/universal">1. Universal load (hybrid)</a> ·
 	<a href="/static">2. Static map</a> ·
-	<a href="/await-in-template">3. {'{#await}'} in template</a> ·
-	<a href="/onmount">4. onMount</a>
+	<a href="/await-expression">3. async await (experimental)</a> ·
+	<a href="/await-in-template">4. {'{#await}'} in template</a> ·
+	<a href="/onmount">5. onMount</a>
 </nav>
 
 <main>{@render children()}</main>
