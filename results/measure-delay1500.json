@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-27T21:36:05.416Z",
+  "base": "http://localhost:4173",
+  "delayMs": 1500,
+  "results": [
+    {
+      "route": "/universal",
+      "sectionsInSsrHtml": "5/5",
+      "fullHydratedMs": 1552,
+      "simpleLazyChunks": "none",
+      "simpleJsKB": 88.2
+    },
+    {
+      "route": "/static",
+      "sectionsInSsrHtml": "5/5",
+      "fullHydratedMs": 1526,
+      "simpleLazyChunks": "Gallery, Accordion, Quote",
+      "simpleJsKB": 88.7
+    },
+    {
+      "route": "/await-expression",
+      "sectionsInSsrHtml": "5/5",
+      "fullHydratedMs": 1547,
+      "simpleLazyChunks": "none",
+      "simpleJsKB": 88
+    },
+    {
+      "route": "/await-in-template",
+      "sectionsInSsrHtml": "2/5",
+      "fullHydratedMs": 35,
+      "simpleLazyChunks": "none",
+      "simpleJsKB": 88.2
+    },
+    {
+      "route": "/onmount",
+      "sectionsInSsrHtml": "2/5",
+      "fullHydratedMs": 34,
+      "simpleLazyChunks": "none",
+      "simpleJsKB": 88.2
+    }
+  ]
+}

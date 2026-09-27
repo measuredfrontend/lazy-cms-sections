@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-27T21:48:07.226Z",
+  "results": {
+    "T1-universal-ssr-complete": {
+      "pass": true,
+      "detail": "all 5 sections in SSR HTML"
+    },
+    "T2-await-block-drops-lazy": {
+      "pass": true,
+      "detail": "lazy sections absent; SSR sends the pending branch"
+    },
+    "T3-onmount-drops-lazy": {
+      "pass": true,
+      "detail": "lazy sections absent from SSR HTML"
+    },
+    "T4-page-downloads-only-its-section-types": {
+      "pass": true,
+      "detail": "core-only page: universal loads code for 0 lazy sections, static for 3; gallery page (universal) loads: Gallery"
+    },
+    "T5-unknown-type-renders-nothing": {
+      "pass": true,
+      "detail": "status 200; unknown type skipped, known sections rendered"
+    },
+    "T6-invalid-cms-data-dropped": {
+      "pass": true,
+      "detail": "validated: status 200, Gallery dropped, others 3/3; control without validation: status 500"
+    },
+    "T7-boundary-does-not-catch-ssr-errors": {
+      "pass": true,
+      "detail": "status 500 (expected 500: <svelte:boundary> does not catch SSR render errors)"
+    },
+    "T8-failed-chunk-removes-ssr-section": {
+      "pass": true,
+      "detail": "Gallery in SSR HTML: true; after hydration with its chunk blocked: gone"
+    }
+  }
+}

@@ -1,6 +1,5 @@
 node_modules
 .svelte-kit
 build
-results
 .DS_Store
 *.log
