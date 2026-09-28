@@ -89,8 +89,31 @@ const tests = {
 		await page.waitForFunction(() => document.documentElement.dataset.hydrated === 'true', null, { timeout: 5000 }).catch(() => {});
 		await page.waitForTimeout(300);
 		const inDom = (await page.locator('[data-section="Gallery"]').count()) > 0;
+		// Control: same page, chunk not blocked.
+		const control = await browser.newPage();
+		await control.goto(BASE + '/universal?page=gallery');
+		await control.waitForFunction(() => document.documentElement.dataset.hydrated === 'true', null, { timeout: 5000 });
+		await control.waitForTimeout(300);
+		const inDomControl = (await control.locator('[data-section="Gallery"]').count()) > 0;
 		await browser.close();
-		return { pass: has(body, 'Gallery') && !inDom, detail: `Gallery in SSR HTML: ${has(body, 'Gallery')}; after hydration with its chunk blocked: ${inDom ? 'still there' : 'gone'}` };
+		return {
+			pass: has(body, 'Gallery') && !inDom && inDomControl,
+			detail: `Gallery in SSR HTML: ${has(body, 'Gallery')}; after hydration: chunk blocked ${inDom ? 'still there' : 'gone'}, control (not blocked) ${inDomControl ? 'still there' : 'gone'}`
+		};
+	},
+	// Finding for "check your own app": SvelteKit serializes page data into a <script>, so a text-only grep
+	// finds lazy-section content even when the section was never rendered. Stripping scripts fixes it.
+	'T9-grep-needs-scripts-stripped': async () => {
+		const { body } = await html('/await-in-template');
+		const count = (s) => s.split('Slide one').length - 1;
+		const raw = count(body);
+		const stripped = count(body.replace(/<script[\s\S]*?<\/script>/g, ''));
+		return { pass: raw > 0 && stripped === 0, detail: `"Slide one" on /await-in-template: ${raw} match(es) in the raw HTML, ${stripped} with scripts stripped` };
+	},
+	// Anti-pattern check: components returned from +page.server.ts can't be serialized.
+	'T10-server-load-cannot-return-components': async () => {
+		const { status } = await html('/server-component');
+		return { pass: status === 500, detail: `status ${status} (expected 500: "Cannot stringify a function" in the server log)` };
 	}
 };
 

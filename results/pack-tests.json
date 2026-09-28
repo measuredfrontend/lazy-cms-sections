@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-27T21:48:07.226Z",
+  "date": "2026-09-28T06:11:43.533Z",
   "results": {
     "T1-universal-ssr-complete": {
       "pass": true,
@@ -31,7 +31,15 @@
     },
     "T8-failed-chunk-removes-ssr-section": {
       "pass": true,
-      "detail": "Gallery in SSR HTML: true; after hydration with its chunk blocked: gone"
+      "detail": "Gallery in SSR HTML: true; after hydration: chunk blocked gone, control (not blocked) still there"
+    },
+    "T9-grep-needs-scripts-stripped": {
+      "pass": true,
+      "detail": "\"Slide one\" on /await-in-template: 1 match(es) in the raw HTML, 0 with scripts stripped"
+    },
+    "T10-server-load-cannot-return-components": {
+      "pass": true,
+      "detail": "status 500 (expected 500: \"Cannot stringify a function\" in the server log)"
     }
   }
 }
